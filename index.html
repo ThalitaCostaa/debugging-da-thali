@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🛠️ Debugging da Thali</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+      color: #e6e6e6;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+      animation: fadeInDown 1s ease-out;
+    }
+
+    .title {
+      font-size: 3em;
+      font-weight: 700;
+      background: linear-gradient(45deg, #00d4ff, #ff00ff, #ffff00);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: rainbow 3s ease-in-out infinite;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-family: 'JetBrains Mono', monospace;
+      color: #888;
+      font-size: 1.2em;
+    }
+
+    .terminal {
+      background: linear-gradient(145deg, #1a1a1a, #0d0d0d);
+      border: 2px solid #333;
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+      animation: slideInLeft 1s ease-out;
+    }
+
+    .terminal::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.1), transparent);
+      animation: scanline 2s infinite;
+    }
+
+    .terminal-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #333;
+    }
+
+    .terminal-dots {
+      display: flex;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .dot.red { background: #ff5f57; }
+    .dot.yellow { background: #ffbd2e; }
+    .dot.green { background: #28ca42; }
+
+    .terminal-title {
+      margin-left: 15px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #888;
+      font-size: 0.9em;
+    }
+
+    .terminal p {
+      font-family: 'JetBrains Mono', monospace;
+      margin: 8px 0;
+      position: relative;
+    }
+
+    .typing {
+      overflow: hidden;
+      border-right: 2px solid #00ff00;
+      white-space: nowrap;
+      animation: typing 2s steps(40, end), blink-caret 0.75s step-end infinite;
+    }
+
+    .progress-container {
+      background: #1a1a1a;
+      border-radius: 25px;
+      padding: 5px;
+      margin: 30px 0;
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
+    }
+
+    .progress-bar {
+      height: 20px;
+      background: linear-gradient(45deg, #00d4ff, #ff00ff);
+      border-radius: 20px;
+      width: 0%;
+      transition: width 0.5s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-bar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      animation: progress-shine 1.5s infinite;
+    }
+
+    .progress-text {
+      text-align: center;
+      margin-top: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #888;
+    }
+
+    .bug-card {
+      background: linear-gradient(145deg, #1e1e1e, #161616);
+      border: 1px solid #333;
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 25px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      animation: slideInUp 0.8s ease-out;
+    }
+
+    .bug-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+      border-color: #555;
+    }
+
+    .bug-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #f9ca24);
+      background-size: 300% 300%;
+      animation: gradientShift 3s ease infinite;
+    }
+
+    .bug-title {
+      font-size: 1.4em;
+      font-weight: 700;
+      margin-bottom: 15px;
+      color: #ff6b6b;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .bug-icon {
+      font-size: 1.2em;
+      animation: bounce 2s infinite;
+    }
+
+    .bug-description {
+      margin-bottom: 20px;
+      line-height: 1.6;
+      color: #ccc;
+      font-size: 1.1em;
+    }
+
+    .options-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .option-btn {
+      background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+      color: #e6e6e6;
+      border: 2px solid #333;
+      padding: 15px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .option-btn:hover {
+      transform: scale(1.02);
+      border-color: #00d4ff;
+      box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+    }
+
+    .option-btn:active {
+      transform: scale(0.98);
+    }
+
+    .option-btn.correct {
+      background: linear-gradient(145deg, #27ae60, #229954);
+      border-color: #2ecc71;
+      animation: success-pulse 0.6s ease;
+    }
+
+    .option-btn.wrong {
+      background: linear-gradient(145deg, #e74c3c, #c0392b);
+      border-color: #e74c3c;
+      animation: wrong-shake 0.6s ease;
+    }
+
+    .option-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .result {
+      margin-top: 15px;
+      padding: 15px;
+      border-radius: 10px;
+      font-weight: 600;
+      text-align: center;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .result.success {
+      background: linear-gradient(145deg, #27ae60, #229954);
+      color: white;
+    }
+
+    .result.error {
+      background: linear-gradient(145deg, #e74c3c, #c0392b);
+      color: white;
+      border: 2px solid #ff6b6b;
+    }
+
+    .final-section {
+      text-align: center;
+      background: linear-gradient(145deg, #2c3e50, #34495e);
+      padding: 40px;
+      border-radius: 20px;
+      margin-top: 30px;
+      animation: celebration 1s ease-out;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .final-title {
+      font-size: 2.5em;
+      margin-bottom: 20px;
+      background: linear-gradient(45deg, #f39c12, #e74c3c, #9b59b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .debug-section {
+      margin-top: 20px;
+      padding: 20px;
+      background: linear-gradient(145deg, #2c1810, #1a0f08);
+      border: 2px solid #ff6b6b;
+      border-radius: 10px;
+      animation: errorPulse 1s ease-out;
+    }
+
+    .debug-title {
+      color: #ff6b6b;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      margin-bottom: 15px;
+      animation: glitch 0.5s ease-out;
+    }
+
+    .debug-task {
+      background: #1a1a1a;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+      border-left: 4px solid #00ff00;
+    }
+
+    .debug-input {
+      width: 100%;
+      padding: 10px;
+      background: #2a2a2a;
+      border: 2px solid #555;
+      border-radius: 5px;
+      color: #e6e6e6;
+      font-family: 'JetBrains Mono', monospace;
+      margin: 10px 0;
+    }
+
+    .debug-input:focus {
+      border-color: #00ff00;
+      outline: none;
+      box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+    }
+
+    .debug-btn {
+      background: linear-gradient(145deg, #ff6b6b, #e74c3c);
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      margin: 10px 5px;
+    }
+
+    .debug-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+    }
+
+    .retry-btn {
+      background: linear-gradient(145deg, #f39c12, #e67e22);
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      margin-top: 15px;
+      animation: pulse 2s infinite;
+    }
+
+    .retry-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 5px 15px rgba(243, 156, 18, 0.4);
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    /* Animações */
+    @keyframes rainbow {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-50px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes slideInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes typing {
+      from { width: 0; }
+      to { width: 100%; }
+    }
+
+    @keyframes blink-caret {
+      from, to { border-color: transparent; }
+      50% { border-color: #00ff00; }
+    }
+
+    @keyframes scanline {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+
+    @keyframes progress-shine {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-10px); }
+      60% { transform: translateY(-5px); }
+    }
+
+    @keyframes success-pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes wrong-shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes celebration {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes confetti {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      25% { transform: translateY(-10px) rotate(90deg); }
+      50% { transform: translateY(-5px) rotate(180deg); }
+      75% { transform: translateY(-10px) rotate(270deg); }
+    }
+
+    @keyframes errorPulse {
+      0% { transform: scale(0.95); opacity: 0; }
+      50% { transform: scale(1.02); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes glitch {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-2px); }
+      40% { transform: translateX(2px); }
+      60% { transform: translateX(-1px); }
+      80% { transform: translateX(1px); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+      .title { font-size: 2em; }
+      .container { padding: 15px; }
+      .bug-card { padding: 20px; }
+      .options-container { gap: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 class="title">Debugging da Thali</h1>
+      <p class="subtitle">Sistema de Correção de Bugs Emocionais v2.0</p>
+    </div>
+
+    <div class="terminal">
+      <div class="terminal-header">
+        <div class="terminal-dots">
+          <div class="dot red"></div>
+          <div class="dot yellow"></div>
+          <div class="dot green"></div>
+        </div>
+        <div class="terminal-title">debug-session.sh</div>
+      </div>
+      <p class="typing">&gt; git clone https://love.dev/thali</p>
+      <p>&gt; cd thali</p>
+      <p>&gt; npm install --save carinho</p>
+      <p>&gt; npm start --mode=debugging</p>
+      <p style="color: #00ff00;">Sistema iniciado! Detectando bugs...</p>
+    </div>
+
+    <div class="progress-container">
+      <div class="progress-bar" id="progressBar"></div>
+      <div class="progress-text" id="progressText">Progresso: 0/10 bugs corrigidos</div>
+    </div>
+
+    <div id="bugs"></div>
+
+    <div id="final" class="final-section hidden">
+      <h2 class="final-title">Sistema Estabilizado!</h2>
+      <p style="font-size: 1.3em; margin-bottom: 15px;">Todos os patches foram aplicados com sucesso!</p>
+      <p style="font-size: 1.1em; color: #bbb;">O sistema da Thali está rodando perfeitamente (até o próximo commit)...</p>
+      <p style="font-size: 1.2em; margin-top: 20px; color: #e74c3c;">Obrigada por ser meu dev favorito!</p>
+    </div>
+  </div>
+
+  <script>
+    const bugs = [
+      {
+        title: 'Bug 001: EMOCIONAL.EXE travou',
+        description: 'A Thali teve um dia difícil e tá carente do nada. O que você faz?',
+        options: ['Fazer um chá ', 'Dizer que vai ficar tudo bem e fazer um cafuné ', 'Ignorar e jogar um TFT '],
+        correct: 1,
+        icon: '😢'
+      },
+      {
+        title: 'Bug 002: MOOD.SWITCH() fora de controle',
+        description: 'A Thali mudou de humor sem aviso. Como estabilizar?',
+        options: ['Fazer uma piadinha sua sem graça ', 'Abraçar forte ', 'Reiniciar Wi-Fi '],
+        correct: 1,
+        icon: '🎭'
+      },
+      {
+        title: 'Bug 003: CACHE de mágoas acumulado',
+        description: 'Thali lembrou de algo que você fez e machucou. O que fazer?',
+        options: ['Pedir desculpa de novo ', 'Mudar de assunto ', 'Dizer que ela exagera '],
+        correct: 0,
+        icon: '💭'
+      },
+      {
+        title: 'Bug 004: LOGÍSTICA.CONFLITO() ativada',
+        description: 'Planos mudaram e ela ficou chateada. Como resolver?',
+        options: ['Reorganizar com carinho e motiva-lá a ir ', 'Dizer que não é culpa sua ', 'Cancelar tudo '],
+        correct: 0,
+        icon: '📋'
+      },
+      {
+        title: 'Bug 005: OVERTHINKING.LOOP()',
+        description: 'Thali está presa no loop do "será que ele me ama mesmo?"',
+        options: ['Provar com ações ', 'Falar que é culpa do borderline ', 'Fingir que não ouviu '],
+        correct: 0,
+        icon: '🌀'
+      },
+      {
+        title: 'Bug 006: CIÚMES.EXCEPTION',
+        description: 'Você não comentou com ela algo que aconteceu contigo. O que fazer?',
+        options: ['Explicar com calma o motivo ', 'Ficar na defensiva ', 'Dizer que faz parte do seu jeito e você não vai mudar! '],
+        correct: 0,
+        icon: '👀'
+      },
+      {
+        title: 'Bug 007: CÓDIGO SILENCIOSO',
+        description: 'Thali ficou em silêncio. Isso é um alerta.',
+        options: ['Perguntar o que houve ', 'Esperar ela falar ', 'Continuar como se nada tivesse acontecido '],
+        correct: 0,
+        icon: '🔇'
+      },
+      {
+        title: 'Bug 008: CRISE.EXISTENCIAL()',
+        description: 'Ela teve uma mini crise sobre a vida. Como apoiar?',
+        options: ['Ouvir e abraçar ', 'Falar pra ela reagir ', 'Mudar de assunto '],
+        correct: 0,
+        icon: '🌊'
+      },
+      {
+        title: 'Bug 009: INSEGURANÇA.ENV()',
+        description: 'Ela se comparou com outras pessoas. Solução?',
+        options: ['Reforçar o quanto ela é única ', 'Dizer que isso é bobeira ', 'Ignorar '],
+        correct: 0,
+        icon: '🪞'
+      },
+      {
+        title: 'Bug 010: BUG DESCONHECIDO (⚠️)',
+        description: 'Thali bugou sem motivo claro. Qual ação você toma?',
+        options: ['Fazer carinho e esperar carregar ', 'Questionar com lógica ', 'Entrar em pânico '],
+        correct: 0,
+        icon: '❓'
+      }
+    ];
+
+    const bugsContainer = document.getElementById('bugs');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    let completed = 0;
+
+    const debugTasks = [
+      {
+        type: 'text',
+        prompt: 'Digite uma frase carinhosa para recompilar o código:',
+        placeholder: 'Ex: Você é a pessoa mais especial do mundo...',
+        check: (input) => input.length > 10
+      },
+      {
+        type: 'choice',
+        prompt: 'Escolha a ação de emergência para estabilizar o sistema:',
+        options: ['Enviar flores virtuais 🌸', 'Fazer promessa de pizza 🍕', 'Mandar foto de gatinho 🐱'],
+        check: () => true
+      },
+      {
+        type: 'text',
+        prompt: 'Complete a função: amor.mostrar("',
+        placeholder: 'seu texto aqui...',
+        suffix: '");',
+        check: (input) => input.length > 5
+      },
+      {
+        type: 'choice',
+        prompt: 'Selecione o patch de emergência:',
+        options: ['Ativar modo carinho++', 'Instalar update de atenção', 'Executar função abraço()'],
+        check: () => true
+      }
+    ];
+
+    function getRandomDebugTask() {
+      return debugTasks[Math.floor(Math.random() * debugTasks.length)];
+    }
+
+    function createDebugSection(bugDiv, retryCallback) {
+      const task = getRandomDebugTask();
+      
+      const debugDiv = document.createElement('div');
+      debugDiv.classList.add('debug-section');
+      
+      debugDiv.innerHTML = `
+        <div class="debug-title">⚠️ ERRO DE COMPILAÇÃO DETECTADO!</div>
+        <div class="debug-task">
+          <p style="color: #ff6b6b; font-family: 'JetBrains Mono', monospace;">
+            > System.crash() - EMOCIONAL_OVERFLOW<br>
+            > Executando debug_intensivo.exe...<br>
+            > Patch necessário para continuar
+          </p>
+          <p style="margin-top: 15px; color: #e6e6e6;">${task.prompt}</p>
+          ${task.type === 'text' ? 
+            `<input type="text" class="debug-input" placeholder="${task.placeholder}" ${task.suffix ? `data-suffix="${task.suffix}"` : ''}>` :
+            task.options.map((option, i) => 
+              `<button class="debug-btn" data-option="${i}">${option}</button>`
+            ).join('')
+          }
+          <br>
+          <button class="retry-btn" style="display: none;">🔧 Recompilar e Tentar Novamente</button>
+        </div>
+      `;
+      
+      bugDiv.appendChild(debugDiv);
+      
+      if (task.type === 'text') {
+        const input = debugDiv.querySelector('.debug-input');
+        const retryBtn = debugDiv.querySelector('.retry-btn');
+        
+        input.addEventListener('input', () => {
+          if (task.check(input.value)) {
+            retryBtn.style.display = 'inline-block';
+            retryBtn.onclick = () => {
+              debugDiv.remove();
+              retryCallback();
+            };
+          } else {
+            retryBtn.style.display = 'none';
+          }
+        });
+      } else {
+        const buttons = debugDiv.querySelectorAll('.debug-btn');
+        const retryBtn = debugDiv.querySelector('.retry-btn');
+        
+        buttons.forEach(btn => {
+          btn.onclick = () => {
+            buttons.forEach(b => b.disabled = true);
+            btn.style.background = 'linear-gradient(145deg, #27ae60, #229954)';
+            retryBtn.style.display = 'inline-block';
+            retryBtn.onclick = () => {
+              debugDiv.remove();
+              retryCallback();
+            };
+          };
+        });
+      }
+    }
+
+    function updateProgress() {
+      const percentage = (completed / bugs.length) * 100;
+      progressBar.style.width = percentage + '%';
+      progressText.textContent = `Progresso: ${completed}/${bugs.length} bugs corrigidos`;
+    }
+
+    bugs.forEach((bug, index) => {
+      const div = document.createElement('div');
+      div.classList.add('bug-card');
+      div.style.animationDelay = `${index * 0.1}s`;
+
+      const title = document.createElement('h3');
+      title.classList.add('bug-title');
+      title.innerHTML = `<span class="bug-icon">${bug.icon}</span> ${bug.title}`;
+      div.appendChild(title);
+
+      const desc = document.createElement('p');
+      desc.classList.add('bug-description');
+      desc.textContent = bug.description;
+      div.appendChild(desc);
+
+      const optionsContainer = document.createElement('div');
+      optionsContainer.classList.add('options-container');
+
+      function createButtons() {
+        optionsContainer.innerHTML = '';
+        
+        bug.options.forEach((option, i) => {
+          const btn = document.createElement('button');
+          btn.classList.add('option-btn');
+          btn.textContent = option;
+          btn.onclick = () => {
+            const allButtons = optionsContainer.querySelectorAll('.option-btn');
+            allButtons.forEach(b => b.disabled = true);
+
+            if (i === bug.correct) {
+              btn.classList.add('correct');
+              const result = document.createElement('div');
+              result.classList.add('result', 'success');
+              result.textContent = '✅ Patch aplicado com sucesso! Bug corrigido.';
+              div.appendChild(result);
+              completed++;
+              updateProgress();
+              
+              if (completed === bugs.length) {
+                setTimeout(() => {
+                  document.getElementById('final').classList.remove('hidden');
+                  document.getElementById('final').scrollIntoView({ behavior: 'smooth' });
+                }, 1000);
+              }
+            } else {
+              btn.classList.add('wrong');
+              
+              const result = document.createElement('div');
+              result.classList.add('result', 'error');
+              result.textContent = '❌ FALHA CRÍTICA! Sistema instável...';
+              div.appendChild(result);
+              
+              setTimeout(() => {
+                createDebugSection(div, () => {
+                  // Remove resultado de erro e reabilita botões
+                  const errorResult = div.querySelector('.result.error');
+                  if (errorResult) errorResult.remove();
+                  createButtons();
+                });
+              }, 1000);
+            }
+          }
+          optionsContainer.appendChild(btn);
+        });
+      }
+
+      createButtons();
+      div.appendChild(optionsContainer);
+      bugsContainer.appendChild(div);
+    });
+
+    // Inicializar progresso
+    updateProgress();
+  </script>
+</body>
+</html>
